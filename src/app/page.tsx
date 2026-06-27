@@ -1,30 +1,54 @@
-import Link from 'next/link';
-import { Product, ApiResponse } from '@/types/product';
+"use client";
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api';
+import Link from "next/link";
+import { useState, useEffect } from "react";
+import { Product, ApiResponse } from "@/types/product";
 
-async function getProducts(): Promise<Product[]> {
-  try {
-    const res = await fetch(`${API_URL}/products`, {
-      cache: 'no-store',
-    });
+const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001/api";
+const categories = ["Electrónica", "Ropa", "Hogar"];
 
-    if (!res.ok) return [];
+export default function HomePage() {
+  const [products, setProducts] = useState<Product[]>([]);
+  const [selectedCategory, setSelectedCategory] = useState("");
 
-    const data: ApiResponse<Product[]> = await res.json();
-    return data.success ? data.data : [];
-  } catch (error) {
-    console.error('Error fetching products:', error);
-    return [];
-  }
-}
+  useEffect(() => {
+    fetchProducts();
+  }, [selectedCategory]);
 
-export default async function HomePage() {
-  const products = await getProducts();
+  const fetchProducts = async () => {
+    try {
+      const url = selectedCategory
+        ? `${API_URL}/products?category=${selectedCategory}`
+        : `${API_URL}/products`;
+
+      const res = await fetch(url, { cache: "no-store" });
+      if (!res.ok) return;
+
+      const data: ApiResponse<Product[]> = await res.json();
+      if (data.success) setProducts(data.data);
+    } catch (error) {
+      console.error("Error fetching products:", error);
+    }
+  };
 
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
       <h1 className="text-3xl font-bold text-gray-900 mb-8">Productos</h1>
+
+      {/* Filtro por categorías */}
+      <select
+        value={selectedCategory}
+        onChange={(e) => setSelectedCategory(e.target.value)}
+        className="border p-2 mb-6"
+      >
+        <option value="">Todas las categorías</option>
+        {categories.map((c) => (
+          <option key={c} value={c}>
+            {c}
+          </option>
+        ))}
+      </select>
+
       {products.length === 0 ? (
         <div className="text-center py-12 bg-white rounded-lg border border-gray-200">
           <p className="text-gray-500">No hay productos disponibles</p>
