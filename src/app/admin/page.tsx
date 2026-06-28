@@ -1,31 +1,54 @@
-'use client';
+"use client";
 
-import { useState, useEffect } from 'react';
-import { Product, ApiResponse } from '@/types/product';
+import { useState, useEffect } from "react";
+import { useRouter } from "next/navigation";
+import { Product, ApiResponse } from "@/types/product";
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api';
+const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001/api";
 
 export default function AdminPage() {
+  const router = useRouter();
   const [products, setProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);
   const [formData, setFormData] = useState({
-    nombre: '',
-    precio: '',
-    descripcion: '',
+    nombre: "",
+    precio: "",
+    descripcion: "",
   });
   const [editingId, setEditingId] = useState<number | null>(null);
 
+  // ✅ Verificar si el usuario es ADMIN
   useEffect(() => {
-    fetchProducts();
+    const token = localStorage.getItem("token");
+    if (!token) {
+      router.push("/login");
+      return;
+    }
+
+    fetch(`${API_URL}/auth/me`, {
+      headers: { Authorization: `Bearer ${token}` },
+    })
+      .then((res) => res.json())
+      .then((data) => {
+        if (!data.success || data.data.role !== "ADMIN") {
+          alert("Acceso denegado. Solo ADMIN puede entrar.");
+          router.push("/");
+        } else {
+          fetchProducts();
+        }
+      });
   }, []);
 
   const fetchProducts = async () => {
     try {
-      const res = await fetch(`${API_URL}/products`);
+      const token = localStorage.getItem("token");
+      const res = await fetch(`${API_URL}/products`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
       const data: ApiResponse<Product[]> = await res.json();
       if (data.success) setProducts(data.data);
     } catch (error) {
-      console.error('Error:', error);
+      console.error("Error:", error);
     } finally {
       setLoading(false);
     }
@@ -36,12 +59,16 @@ export default function AdminPage() {
     const url = editingId
       ? `${API_URL}/products/${editingId}`
       : `${API_URL}/products`;
-    const method = editingId ? 'PUT' : 'POST';
+    const method = editingId ? "PUT" : "POST";
 
     try {
+      const token = localStorage.getItem("token");
       const res = await fetch(url, {
         method,
-        headers: { 'Content-Type': 'application/json' },
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
         body: JSON.stringify({
           nombre: formData.nombre,
           precio: parseFloat(formData.precio),
@@ -50,12 +77,12 @@ export default function AdminPage() {
       });
 
       if (res.ok) {
-        setFormData({ nombre: '', precio: '', descripcion: '' });
+        setFormData({ nombre: "", precio: "", descripcion: "" });
         setEditingId(null);
         fetchProducts();
       }
     } catch (error) {
-      console.error('Error:', error);
+      console.error("Error:", error);
     }
   };
 
@@ -63,26 +90,28 @@ export default function AdminPage() {
     setFormData({
       nombre: product.nombre,
       precio: product.precio.toString(),
-      descripcion: product.descripcion || '',
+      descripcion: product.descripcion || "",
     });
     setEditingId(product.id);
   };
 
   const handleDelete = async (id: number) => {
-    if (!confirm('¿Estás seguro?')) return;
+    if (!confirm("¿Estás seguro?")) return;
 
     try {
+      const token = localStorage.getItem("token");
       const res = await fetch(`${API_URL}/products/${id}`, {
-        method: 'DELETE',
+        method: "DELETE",
+        headers: { Authorization: `Bearer ${token}` },
       });
       if (res.ok) fetchProducts();
     } catch (error) {
-      console.error('Error:', error);
+      console.error("Error:", error);
     }
   };
 
   const handleCancel = () => {
-    setFormData({ nombre: '', precio: '', descripcion: '' });
+    setFormData({ nombre: "", precio: "", descripcion: "" });
     setEditingId(null);
   };
 
@@ -103,62 +132,50 @@ export default function AdminPage() {
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
         {/* Formulario */}
         <div className="lg:col-span-1">
-          <div className="bg-white border border-gray-200 rounded-lg p-6">
+          <div className="bg-white border border-gray-200 rounded-lg p-6 shadow-md">
             <h2 className="text-xl font-semibold text-gray-900 mb-4">
-              {editingId ? 'Editar Producto' : 'Crear Producto'}
+              {editingId ? "Editar Producto" : "Crear Producto"}
             </h2>
             <form onSubmit={handleSubmit} className="space-y-4">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Nombre
-                </label>
-                <input
-                  type="text"
-                  required
-                  value={formData.nombre}
-                  onChange={(e) =>
-                    setFormData({ ...formData, nombre: e.target.value })
-                  }
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-gray-900"
-                />
-              </div>
+              <input
+                type="text"
+                placeholder="Nombre"
+                required
+                value={formData.nombre}
+                onChange={(e) =>
+                  setFormData({ ...formData, nombre: e.target.value })
+                }
+                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-green-600 focus:outline-none"
+              />
 
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Precio
-                </label>
-                <input
-                  type="number"
-                  step="0.01"
-                  required
-                  value={formData.precio}
-                  onChange={(e) =>
-                    setFormData({ ...formData, precio: e.target.value })
-                  }
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-gray-900 text-gray-900"
-                />
-              </div>
+              <input
+                type="number"
+                step="0.01"
+                placeholder="Precio"
+                required
+                value={formData.precio}
+                onChange={(e) =>
+                  setFormData({ ...formData, precio: e.target.value })
+                }
+                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-green-600 focus:outline-none"
+              />
 
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Descripción
-                </label>
-                <textarea
-                  rows={3}
-                  value={formData.descripcion}
-                  onChange={(e) =>
-                    setFormData({ ...formData, descripcion: e.target.value })
-                  }
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-gray-900 text-gray-900"
-                />
-              </div>
+              <textarea
+                rows={3}
+                placeholder="Descripción"
+                value={formData.descripcion}
+                onChange={(e) =>
+                  setFormData({ ...formData, descripcion: e.target.value })
+                }
+                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-green-600 focus:outline-none"
+              />
 
               <div className="flex gap-2">
                 <button
                   type="submit"
-                  className="flex-1 bg-gray-900 text-white py-2 rounded-md hover:bg-gray-800 transition-colors"
+                  className="flex-1 bg-green-600 text-white py-2 rounded-md hover:bg-green-700 transition-colors font-semibold"
                 >
-                  {editingId ? 'Actualizar' : 'Crear'}
+                  {editingId ? "Actualizar" : "Crear"}
                 </button>
                 {editingId && (
                   <button
@@ -176,7 +193,7 @@ export default function AdminPage() {
 
         {/* Tabla de productos */}
         <div className="lg:col-span-2">
-          <div className="bg-white border border-gray-200 rounded-lg overflow-hidden">
+          <div className="bg-white border border-gray-200 rounded-lg overflow-hidden shadow-md">
             <table className="min-w-full">
               <thead className="bg-gray-50 border-b border-gray-200">
                 <tr>
@@ -198,12 +215,12 @@ export default function AdminPage() {
                       {product.nombre}
                     </td>
                     <td className="px-6 py-4 text-sm text-gray-900">
-                      {product.precio}
+                      S/ {product.precio}
                     </td>
                     <td className="px-6 py-4 text-sm text-right">
                       <button
                         onClick={() => handleEdit(product)}
-                        className="text-gray-600 hover:text-gray-900 mr-4"
+                        className="text-blue-600 hover:text-blue-800 mr-4"
                       >
                         Editar
                       </button>

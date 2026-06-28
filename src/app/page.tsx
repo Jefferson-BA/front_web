@@ -33,24 +33,28 @@ export default function HomePage() {
 
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
-      <h1 className="text-3xl font-bold text-gray-900 mb-8">Productos</h1>
+      <h1 className="text-4xl font-bold text-gray-900 mb-8 text-center">
+        Catálogo de Productos
+      </h1>
 
       {/* Filtro por categorías */}
-      <select
-        value={selectedCategory}
-        onChange={(e) => setSelectedCategory(e.target.value)}
-        className="border p-2 mb-6"
-      >
-        <option value="">Todas las categorías</option>
-        {categories.map((c) => (
-          <option key={c} value={c}>
-            {c}
-          </option>
-        ))}
-      </select>
+      <div className="flex justify-center mb-8">
+        <select
+          value={selectedCategory}
+          onChange={(e) => setSelectedCategory(e.target.value)}
+          className="border px-4 py-2 rounded-md shadow-sm focus:ring-2 focus:ring-green-600 focus:outline-none"
+        >
+          <option value="">Todas las categorías</option>
+          {categories.map((c) => (
+            <option key={c} value={c}>
+              {c}
+            </option>
+          ))}
+        </select>
+      </div>
 
       {products.length === 0 ? (
-        <div className="text-center py-12 bg-white rounded-lg border border-gray-200">
+        <div className="text-center py-12 bg-white rounded-lg border border-gray-200 shadow-sm">
           <p className="text-gray-500">No hay productos disponibles</p>
         </div>
       ) : (
@@ -59,12 +63,12 @@ export default function HomePage() {
             <Link
               key={product.id}
               href={`/products/${product.id}`}
-              className="bg-white border border-gray-200 rounded-lg p-6 hover:shadow-lg transition-shadow"
+              className="bg-white border border-gray-200 rounded-lg p-6 hover:shadow-lg transition-transform hover:scale-[1.02]"
             >
               <h2 className="text-xl font-semibold text-gray-900 mb-2">
                 {product.nombre}
               </h2>
-              <p className="text-2xl font-bold text-gray-900 mb-3">
+              <p className="text-2xl font-bold text-green-600 mb-3">
                 ${product.precio}
               </p>
               {product.descripcion && (
